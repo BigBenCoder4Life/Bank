@@ -1,0 +1,67 @@
+<%-- 
+    Document   : awardPage
+    Created on : Mar 26, 2014, 5:38:58 PM
+    Author     : kirtlepb
+--%>
+<%@page import= "java.util.*, db.*"%>
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Virginia Statistics</title>
+        <link rel= "stylesheet" href= "../stylesheet.css" />
+    </head>
+    <body>
+        <h1> <font color="beige">VIRIGINIA ACCREDITATION STATISTICS TOOL</font></h1>
+  
+              <form action="">
+         <select name="">
+        <%
+       for (String sch_year : SchoolData.SelectYear()) 
+       {
+         out.print("<option value= sch_name>" +  sch_year + " </option>");
+       }
+        %>
+         </select>
+         </form>
+         
+         <form action="">
+         <select name="div_num">
+        <%
+            for (int div_num : SchoolData.selectDivNumbers()) 
+            {
+              out.print("<option value= sch_name>" +  div_num+ " </option>");
+            }
+        %>
+         </select>
+         </form>
+         
+           <form action="">
+         <select name="div_name">
+        <%
+            for (String div_name : SchoolData.selectDivNames()) 
+            {
+              out.print("<option value= sch_name>" +  div_name + " </option>");
+            }
+        %>
+         </select>
+         </form>       
+         
+                  <form action= "" method="post">
+         <select name="sch_name">
+        <%
+       for (String sch_name : SchoolData.selectSchNames()) 
+       {
+          out.print("<option value= sch_name>" +  sch_name+ " </option>");
+       }
+        %>
+         </select>
+         </form>
+         
+
+         <button type="button" onclick="alert('Hello world!')">Click Me!</button>
+         
+         
+    </body>
+</html>

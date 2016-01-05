@@ -1,0 +1,8 @@
+              out.println(data.accred_status);
+                out.println(data.test);
+                out.println(data.pass_rate);
+                out.println(data.fail_rate);
+                out.println("--------------------------");
+
+   for (String sch_name : SchoolData.SelectSchNames()) {
+                out.print("<option value= sch_name>" +  sch_name+ " </option>");

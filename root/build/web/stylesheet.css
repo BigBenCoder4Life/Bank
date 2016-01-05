@@ -1,0 +1,119 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Mar 25, 2014, 4:39:30 PM
+    Author     : kirtlepb
+*/
+
+
+.VirginiaChart
+{
+    position: fixed;
+    left: 1150px;
+    top: 100px;
+    /*border-color: beige;*/
+    border:double;
+}
+
+.VirginiaStats
+{
+    position: relative;
+    left: 10px;
+    top: 50px;
+    border:double;  
+    /*color:beige;*/
+    width:700px;
+}
+
+.MapContainer
+{
+    position: fixed;
+    left: 10px;
+    top: 350px; 
+}
+
+.picMapContainer
+{
+    position: fixed;
+    left: 900px;
+    top: 200px;
+    border:double;
+    padding:5px;
+}
+
+.Map
+{
+    position: fixed;
+    left: 10px;
+    top: 300px;
+    border:double;
+}
+.CountyMap
+{
+    position: fixed;
+    left: 1100px;
+    top: 650px;
+    border:double;
+}
+
+.barChart
+{
+    position: fixed;
+    left: 40px;
+    top: 895px;
+    border-color: black;
+    border:double;  
+}
+
+.columnChart
+{
+    position: fixed;
+    left: 40px;
+    top: 800px;
+    /*border-color: beige;*/
+    border:double; 
+}
+
+.countyMapAwardPage
+{
+    position: fixed;
+    left: 10px;
+    top: 250px;
+    /*border-color: beige;*/
+    border:double;   
+}
+
+.countyMapTropyPage
+{
+    position: fixed;
+    left: 1000px;
+    top: 200px;
+    /*border-color: beige;*/
+    border:double;   
+}
+
+.Sch_Cnt
+{
+    position: fixed;
+    left: 1300px;
+    top: 200px;
+    /*border-color: beige;*/
+    border:double;     
+}
+
+.tutorialHeader
+{
+    position: fixed;
+    left: 950px;
+    top: 100px;
+}
+
+.video
+{
+    position: fixed;
+    left: 400px;
+    top: 200px;
+}

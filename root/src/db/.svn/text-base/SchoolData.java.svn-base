@@ -1,0 +1,745 @@
+package db;
+
+import java.io.IOException;
+import static java.lang.System.out;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.JspWriter;
+
+/*
+ *This object stores data from a database.
+ *
+ *
+ *
+ * @author Kirtlepb
+ */
+public class SchoolData {
+
+    public String sch_name;      //Schools name.
+    public String accred_status; //Accreditation status.
+    public String test;          // Test subject.
+    public double pass_rate;     //Pass rate for test subject.
+    public double fail_rate;     //Fail rate for test subject.
+
+    /**
+     * Constructs a default school_data object..
+     *
+     * @throws java.sql.SQLException
+     */
+    public SchoolData() throws SQLException {
+        this.sch_name = "Default";
+        this.accred_status = "Default";
+        this.test = "Default";
+        this.pass_rate = 0.00;
+        this.fail_rate = 0.00;
+    }
+
+    /**
+     * Constructs a school_data object..
+     *
+     * @param sch_name - The school name.
+     * @param accred_status - The accreditation status.
+     * @param test - The test of interest.
+     * @param pass_rate - The average pass rate.
+     * @param fail_rate - The average fail rate.
+     *
+     * @throws java.sql.SQLException
+     */
+    public SchoolData(String sch_name, String accred_status, String test,
+            double pass_rate, double fail_rate) throws SQLException {
+        this.sch_name = sch_name;
+        this.accred_status = accred_status;
+        this.test = test;
+        this.pass_rate = pass_rate;
+        this.fail_rate = fail_rate;
+    }
+
+    /**
+     *
+     * @param sch_year
+     * @param sch_name
+     * @return status - The accreditation status.
+     * @throws SQLException
+     * @throws java.io.IOException
+     */
+    public static String selectAccred(String sch_year, String sch_name) throws SQLException, IOException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+        String status = "";
+
+        sql =   "SELECT sch_accred FROM accreditation AS acc WHERE acc.sch_name = ? AND acc.school_year = ?";
+
+        st = db.prepareStatement(sql);
+
+        st.setString(1, sch_name);
+        st.setString(2, sch_year);
+
+        rs = st.executeQuery();
+
+        while (rs.next()) {
+             status = rs.getString(1);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return status;
+    }
+
+    /**
+     *
+     * @param sch_name - The name of the school.
+     * @param sch_year - The year of data collected.
+     * @return list - A list SchoolData objects.
+     * @throws SQLException
+     */
+    public static List<SchoolData> selectData(String sch_name, String sch_year) throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<SchoolData> list = new ArrayList<SchoolData>();  //List of school_data objects.  
+
+        sql = "SELECT acc.sch_name, sch_accred AS sch_accred_status, test, CAST(AVG(pass_rate)"
+                + "AS DECIMAL(10,2)) AS pass_rate, CAST(avg(fail_rate) AS DECIMAL(10,2)) AS fail_rate\n"
+                + "FROM accreditation AS acc\n"
+                + "JOIN sol_test_data AS sol ON sol.sch_name = acc.sch_name\n"
+                + "WHERE acc.sch_name = '?'\n"
+                + "  AND acc.school_year = '?'\n"
+                + "GROUP BY acc.sch_name, sch_accred_status, test\n"
+                + "ORDER BY test";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, sch_name);
+        st.setString(2, sch_year);
+        
+        rs = st.executeQuery();
+
+        while (rs.next()) {
+
+            String name = rs.getString(1);
+            String status = rs.getString(2);
+            String test = rs.getString(3);
+            double pass = rs.getDouble(4);
+            double fail = rs.getDouble(5);
+
+             SchoolData data = new SchoolData(name, status, test, pass, fail);
+            list.add(data);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    }
+    
+     /**
+     *
+     * @return list - A list of all school divisions in the accreditation relation.
+     * @throws SQLException
+     */
+    public static List<Integer> selectDivNumbers() throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<Integer> list = new ArrayList<Integer>();  //List of school_data objects.  
+
+        sql = "SELECT DISTINCT div_num FROM accreditation ORDER BY div_num ASC";
+              
+        st = db.prepareStatement(sql);
+        rs = st.executeQuery();
+
+        while (rs.next()) 
+        {
+
+            int div_num = rs.getInt(1);
+
+            list.add(div_num);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    }
+
+    /**
+     *
+     * @param divName - The name of the county.
+     * @return list - A list of all divisions in the accreditation relation.
+     * @throws SQLException
+     */
+    public static List<String> selectDivSch(String divName) throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<String> list = new ArrayList<String>();  //List of school_data objects.  
+
+        sql = "SELECT DISTINCT div_name FROM accreditation  WHERE div_name = ? ORDER BY div_name ASC";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, divName);
+
+        rs = st.executeQuery();
+
+        while (rs.next()) {
+
+            String sch_name = rs.getString(1);
+
+            list.add(sch_name);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    }
+
+     /**
+     *
+     * @return list - A list of all division in the accreditation relation.
+     * @throws SQLException
+     */
+    public static List<String> selectDivNames() throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<String> list = new ArrayList<String>();  //List of school_data objects.  
+
+        sql = "SELECT DISTINCT div_name FROM accreditation ORDER BY div_name ASC";
+              
+        st = db.prepareStatement(sql);
+        rs = st.executeQuery();
+
+        while (rs.next()) 
+        {
+
+            String sch_name = rs.getString(1);
+
+            list.add(sch_name);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    } 
+    
+     /**
+     *
+     * @param div_name - The county name.
+     * @return list - A list of all division in the accreditation relation.
+     * @throws SQLException
+     */
+    public static List<String> selectSchNames(String div_name) throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<String> list = new ArrayList<String>();  //List of school_data objects.  
+
+        sql = "SELECT DISTINCT sch_name FROM accreditation WHERE div_name = ?";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, div_name);
+
+        rs = st.executeQuery();
+
+        while (rs.next()) 
+        {
+
+            String name = rs.getString(1);
+
+            list.add(name);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    } 
+
+    /**
+     *
+     * @param div_name - The county name.
+     * @return list - A list of all division in the accreditation relation.
+     * @throws SQLException
+     */
+    public static List<String> selectSchSections(String div_name) throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<String> list = new ArrayList<String>();  //List of school_data objects.  
+
+        sql = "SELECT DISTINCT sch_name FROM accreditation WHERE sch_name = ? ORDER BY sch_name ASC";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, div_name);
+
+        rs = st.executeQuery();
+
+        while (rs.next()) {
+
+            String sch_name = rs.getString(1);
+
+            list.add(sch_name);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    }
+
+    /**
+     *
+     * @return list - A list of all school years in the accreditation relation.
+     * @throws SQLException
+     */
+    public static List<String> SelectYear() throws SQLException {
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection.
+
+        List<String> list = new ArrayList<String>();  //List of school_data objects.  
+
+        sql = "SELECT DISTINCT school_year FROM accreditation ORDER BY school_year ASC";
+              
+        st = db.prepareStatement(sql);
+        rs = st.executeQuery();
+
+        while (rs.next()) 
+        {
+
+            String sch_name = rs.getString(1);
+
+            list.add(sch_name);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+
+        return list;
+    }
+
+    /**
+     * Function used with Virginia Page tool
+     *
+     * @param request - Request from html/jsp page.
+     * @param output - Output for html/jsp page.
+     * @throws java.sql.SQLException
+     * @throws java.io.IOException
+     */
+    public static void PrintData(HttpServletRequest request, JspWriter output) throws SQLException, IOException {
+
+        String sch_year = request.getParameter("sch_year");
+        String sch_name = request.getParameter("sch_name");
+        String subject = request.getParameter("subject");
+        String div_num  = request.getParameter("div_num");
+       int div_numInt;
+        
+        if(div_num == null)
+            div_numInt = Integer.parseInt("001");
+        else
+            div_numInt = Integer.parseInt(div_num);
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+        sql =  "SELECT pass_rate, fail_rate " +
+                "FROM sol_test_data " +
+                "WHERE school_year = ?" +
+                "  AND div_num = ?" +
+                "  AND sch_name = ?" +
+                "  AND test = ?" +
+                "  AND federal_race_code IS NULL" +
+                "  AND gender IS NULL" +
+                "  AND disability_flag IS NULL" +
+                "  AND lep_flag IS NULL" +
+                "  AND disadvantaged_flag IS NULL" +
+                "  AND test_level IS NULL" +
+                "  AND test IS NOT NULL ";
+
+        st = db.prepareStatement(sql);
+        st.setInt(2, div_numInt);
+        st.setString(3, sch_name);
+        st.setString(1, sch_year);
+        st.setString(4, subject);
+        rs = st.executeQuery();
+
+        output.print("['" + subject + "','Percentage'],");
+
+        while (rs.next()) {
+
+            double pass = rs.getDouble(1);
+            double fail = rs.getDouble(2);
+
+            String line = String.format("['%s',%s],", "Pass Rate", pass);
+            String line2 = String.format("['%s',%s],", "Fail Rate", fail);
+
+            output.print(line);
+            output.print(line2);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }
+
+    /**
+     * Function used with Virginia Page tool
+     *
+     * @param subject - The test subject.
+     * @param sch_name - The school name.
+     * @param sch_year - The school year.
+     * @param output -  The output stream for html/jsp page.
+     * @throws java.sql.SQLException
+     * @throws java.io.IOException
+     */
+    public static void PrintData(String subject, String sch_name, String sch_year, JspWriter output) throws SQLException, IOException {
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+        sql = "SELECT acc.sch_name, sch_accred AS sch_accred_status, test, CAST(AVG(pass_rate)"
+                + "AS DECIMAL(10,2)) AS pass_rate, CAST(avg(fail_rate) AS DECIMAL(10,2)) AS fail_rate\n"
+                + "FROM accreditation AS acc\n"
+                + "JOIN sol_test_data AS sol ON sol.sch_name = acc.sch_name\n"
+                + "WHERE acc.sch_name = ?\n"
+                + "  AND acc.school_year = ?\n"
+                + "  AND sol.test = ?\n"
+                + "GROUP BY acc.sch_name, sch_accred_status, test\n"
+                + "ORDER BY test";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, sch_name);
+        st.setString(2, sch_year);
+        st.setString(3, subject);
+        rs = st.executeQuery();
+
+        output.print("['" + subject + "','Percentage'],");
+
+        while (rs.next()) {
+
+            String name = rs.getString(1);
+            String status = rs.getString(2);
+            String test = rs.getString(3);
+            double pass = rs.getDouble(4);
+            double fail = rs.getDouble(5);
+
+            String line = String.format("['%s',%s],", "Pass Rate", rs.getDouble(4));
+            String line2 = String.format("['%s',%s],", "Fail Rate", rs.getDouble(5));
+
+            output.print(line);
+            output.print(line2);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }
+
+    /**
+     *
+     * @param sch_name -The school name.
+     * @param sch_year - The school year.
+     * @param out - The output stream for html/jsp page.
+     * @throws SQLException
+     * @throws IOException
+     */
+    public static void PrintData(String sch_name, String sch_year, JspWriter out) throws SQLException, IOException {
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+        sql = "SELECT acc.sch_name, sch_accred AS sch_accred_status, test, CAST(AVG(pass_rate)"
+                + "AS DECIMAL(10,2)) AS pass_rate, CAST(avg(fail_rate) AS DECIMAL(10,2)) AS fail_rate\n"
+                + "FROM accreditation AS acc\n"
+                + "JOIN sol_test_data AS sol ON sol.sch_name = acc.sch_name\n"
+                + "WHERE acc.sch_name = ?\n"
+                + "  AND acc.school_year = ?\n"
+                + "GROUP BY acc.sch_name, sch_accred_status, test\n"
+                + "ORDER BY test";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, sch_name);
+        st.setString(2, sch_year);
+
+        rs = st.executeQuery();
+
+        while (rs.next()) {
+
+            String name = rs.getString(1);
+            String status = rs.getString(2);
+            String test = rs.getString(3);
+            double pass = rs.getDouble(4);
+            double fail = rs.getDouble(5);
+
+            String line = String.format("[%s,%s],", rs.getDouble(4), rs.getDouble(5));
+
+            out.print(line);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }
+
+    /**
+     * Function used with Virginia Page tool
+     *
+     * @param test - The type of test.
+     * @param sch_name - The school name.
+     * @param sch_year - The school year.
+     * @param out - The output stream for html/jsp page.
+     * @throws SQLException
+     * @throws IOException
+     */
+    public static void PrintTestDataMain(String test, String sch_name, String sch_year) throws SQLException, IOException {
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+        sql = "SELECT acc.sch_name, sch_accred AS sch_accred_status, test, CAST(AVG(pass_rate)"
+                + "AS DECIMAL(10,2)) AS pass_rate, CAST(avg(fail_rate) AS DECIMAL(10,2)) AS fail_rate\n"
+                + "FROM accreditation AS acc\n"
+                + "JOIN sol_test_data AS sol ON sol.sch_name = acc.sch_name\n"
+                + "WHERE acc.sch_name = ?\n"
+                + "AND acc.school_year = ?\n"
+                + "AND sol.test = ?\n"
+                + "GROUP BY acc.sch_name, sch_accred_status, test\n"
+                + "ORDER BY test";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, sch_name);
+        st.setString(2, sch_year);
+        st.setString(3, test);
+        rs = st.executeQuery();
+
+        out.print("['Test', 'Pass', 'Fail'],");
+
+        while (rs.next()) {
+
+            String name = rs.getString(1);
+            String status = rs.getString(2);
+            String subject = rs.getString(3);
+            double pass = rs.getDouble(4);
+            double fail = rs.getDouble(5);
+
+            String line = String.format("['%s',%s,%s],", test, rs.getDouble(4), rs.getDouble(5));
+
+            out.print(line);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }
+
+    /*
+     * Function used for Main to debug ouput. 
+     * sch_name - The school name.
+     * sch_year - The school year.
+     */
+    public static void PrintDataMain(String sch_name, String sch_year) throws SQLException, IOException {
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+        sql = "SELECT acc.sch_name, sch_accred AS sch_accred_status, test, CAST(AVG(pass_rate)"
+                + "AS DECIMAL(10,2)) AS pass_rate, CAST(avg(fail_rate) AS DECIMAL(10,2)) AS fail_rate\n"
+                + "FROM accreditation AS acc\n"
+                + "JOIN sol_test_data AS sol ON sol.sch_name = acc.sch_name\n"
+                + "WHERE acc.sch_name = ?\n"
+                + "  AND acc.school_year = ?\n"
+                + "GROUP BY acc.sch_name, sch_accred_status, test\n"
+                + "ORDER BY test";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, sch_name);
+        st.setString(2, sch_year);
+
+        rs = st.executeQuery();
+
+        out.print("['Test', 'Pass', 'Fail'],");
+
+        while (rs.next()) {
+
+            String name = rs.getString(1);
+            String status = rs.getString(2);
+            String test = rs.getString(3);
+            double pass = rs.getDouble(4);
+            double fail = rs.getDouble(5);
+
+            String line = String.format("[%s,%s],", rs.getDouble(4), rs.getDouble(5));
+
+            out.print(line);
+
+            String line2 = String.format("[%s,%s,%s],", test, rs.getDouble(4), rs.getDouble(5));
+
+            out.println(line2);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }
+    
+    /**
+     * Function used with Virginia Page tool
+     *
+     * @param request - Request from html/jsp page.
+     * @param output - Output for html/jsp page.
+     * @throws java.sql.SQLException
+     * @throws java.io.IOException
+     */
+    public static void PrintVirginiaData(HttpServletRequest request, JspWriter output) throws SQLException, IOException {
+
+        String sch_year = request.getParameter("sch_year");
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+         sql = "SELECT *" 
+                + "FROM virginia_sch_cnt AS vsc"
+                + "  WHERE vsc.sch_year = ?";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, sch_year);
+        rs = st.executeQuery();
+
+        output.print("['School Year','Total', 'High Schools', 'Middle Schools', 'Elementary Schools'"
+                + ",'Pre-Schools','Combination'],");
+
+        while (rs.next()) {
+
+            String year = rs.getString(1);
+            int sch_cnt  = rs.getInt(2);
+            int hs_cnt = rs.getInt(3);
+            int middle_cnt  = rs.getInt(4);
+            int elem_cnt = rs.getInt(5);
+            int pre_cnt = rs.getInt(6);
+            int comb_cnt = rs.getInt(7);
+
+            
+            String line = String.format("['%s',%s,%s,%s,%s,%s,%s],", year, sch_cnt, hs_cnt, middle_cnt,elem_cnt,pre_cnt,comb_cnt);
+//            String line2 = String.format("['%s',%s],", "Virginia Total", sch_cnt);
+//            String line3 = String.format("['%s',%s],", "High Schools", hs_cnt);
+//            String line4 = String.format("['%s',%s],", "Middle Schools", middle_cnt);
+//            String line5 = String.format("['%s',%s],", "Elementary Schools", elem_cnt);
+//            String line6 = String.format("['%s',%s],", "Pre-Schools", pre_cnt);
+//            String line7 = String.format("['%s',%s],", "Combination Schools", comb_cnt);
+
+            output.print(line);
+//            output.print(line2);
+//            output.print(line3);
+//            output.print(line4);
+//            output.print(line5);
+//            output.print(line6);
+//            output.print(line7);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }    
+
+       /**
+     * Function used with Virginia Page tool
+     *
+     * @param request - Request from html/jsp page.
+     * @param output - Output for html/jsp page.
+     * @throws java.sql.SQLException
+     * @throws java.io.IOException
+     */
+    public static void PrintVirginiaDataMAIN() throws SQLException, IOException {
+
+ 
+
+        String sql;                     //Holds string for sql query.
+        PreparedStatement st;           //Statment object for postgresql.
+        ResultSet rs;                   //The result set for the query.
+        Connection db = Database.open(); //Open a connection. 
+
+        sql = "SELECT *" 
+                + "FROM virginia_sch_cnt AS vsc"
+                + "  WHERE vsc.sch_year = ?";
+
+        st = db.prepareStatement(sql);
+        st.setString(1, "2006-2007");
+        rs = st.executeQuery();
+
+        System.out.print("['School Year','Total', 'High Schools', 'Middle Schools', 'Elementary Schools'"
+                + ",'Pre-Schools','Combination'],");
+
+        while (rs.next()) {
+
+            String year = rs.getString(1);
+            int sch_cnt  = rs.getInt(2);
+            int hs_cnt = rs.getInt(3);
+            int middle_cnt  = rs.getInt(4);
+            int elem_cnt = rs.getInt(5);
+            int pre_cnt = rs.getInt(6);
+            int comb_cnt = rs.getInt(7);
+
+            
+            String line = String.format("['%s',%s],", "School Year", year);
+            String line2 = String.format("['%s',%s],", "Virginia Total", sch_cnt);
+            String line3 = String.format("['%s',%s],", "High Schools", hs_cnt);
+            String line4 = String.format("['%s',%s],", "Middle Schools", middle_cnt);
+            String line5 = String.format("['%s',%s],", "Elementary Schools", elem_cnt);
+            String line6 = String.format("['%s',%s],", "Pre-Schools", pre_cnt);
+            String line7 = String.format("['%s',%s],", "Combination Schools", comb_cnt);
+
+            System.out.print(line);
+            System.out.print(line2);
+            System.out.print(line3);
+            System.out.print(line4);
+            System.out.print(line5);
+            System.out.print(line6);
+            System.out.print(line7);
+        }
+
+        st.close();
+        db.close();
+        rs.close();
+    }    
+}
